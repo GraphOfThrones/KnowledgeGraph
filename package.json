@@ -1,0 +1,16 @@
+{
+  "name": "graph_of_thrones",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "request": "^2.88.0",
+    "underscore.string": "^3.3.4"
+  }
+}
