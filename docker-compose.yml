@@ -1,0 +1,7 @@
+version: '3.1'
+
+services:
+  blazegraph:
+    image: lyrasis/blazegraph:2.1.4
+    ports:
+      - 8889:8080
