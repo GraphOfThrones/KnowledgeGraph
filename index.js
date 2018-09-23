@@ -1,6 +1,7 @@
 const underscored = require('underscore.string/underscored')
 const fs = require('fs')
 const request = require('request')
+const jsonld = require('jsonld');
 let characters = require('./data/characters')
 let houses = require('./data/houses')
 
@@ -112,24 +113,43 @@ houses = houses.map((h) => {
 
 characters = characters.map((c) => {
 
+  c.parent = []
+  c.child = []
+
+  c.child = c['Children'].map((a) => {
+    // return characters.find(e => a === e.id)['@id']
+    return { '@id': characters.find(e => a === e.id)['@id'] }
+  })
+
   c.allegiances = c['Allegiances'].map((a) => {
     // return characters.find(e => a === e.id)['@id']
-    return houses.find(e => a === e.id)['@id']
+    return { '@id': houses.find(e => a === e.id)['@id'] }
   })
 
   if (c['Father']) {
-    c.father = characters.find(e => c['Father'] === e.id)['@id']
+    c.parent.push({ '@id': characters.find(e => c['Father'] === e.id)['@id'] })
   }
 
   if (c['Mother']) {
-    c.mother = characters.find(e => c['Mother'] === e.id)['@id']
+    c.parent.push({ '@id': characters.find(e => c['Mother'] === e.id)['@id'] })
+    // c.mother = characters.find(e => c['Mother'] === e.id)['@id']
   }
 
   if (c['Spouse']) {
     c.spouse = characters.find(e => c['Spouse'] === e.id)['@id']
   }
 
+  c.nickname = c['Aliases']
+  c.honorificPrefix = c['Titles']
+
+  if (c.IsFemale) {
+    c.gender = { '@type': 'foaf:gender', '@id': 'http://schema.org/Female' }
+  } else {
+    c.gender =  { '@type': 'foaf:gender', '@id': 'http://schema.org/Male' }
+  }
+
   delete c.Aliases
+  delete c.Titles
   delete c.Father
   delete c.Mother
   delete c.Spouse
@@ -139,8 +159,10 @@ characters = characters.map((c) => {
 })
 
 characters.forEach((c) => {
-  c['rdfs:label'] = c.label
+  // c['rdfs:label'] = c.label
+  c['name'] = c.label
   c['@type'] = 'foaf:Person'
+  c["@context"] = "https://tetherless-world.github.io/angular-json-ld-editor/person.jsonld"
   delete c.id
   delete c.Id
   delete c.TvSeries
@@ -158,9 +180,11 @@ characters.forEach((c) => {
   delete c.Books
   delete c.label
   delete c.identifier
-  delete c.spouse
+  // delete c.spouse
   delete c.mother
   delete c.father
+
+  c['affiliation'] = c.allegiances
   delete c.allegiances
 
   graph.push(c)
@@ -188,8 +212,10 @@ characters.forEach((c) => {
 })
 
 houses.forEach((h) => {
-  h['rdfs:label'] = h.label
-  h['@type'] = 'foaf:Group'
+  // h['rdfs:label'] = h.label
+  h['name'] = h.label
+  h['@type'] = 'foaf:Organization'
+  h["@context"] = "https://tetherless-world.github.io/angular-json-ld-editor/person.jsonld"
   delete h.id
   delete h.Id
   delete h.Name
@@ -226,4 +252,11 @@ const kb = {
   "@graph": graph
 }
 
-fs.writeFileSync(`./data/graph.ld.json`, JSON.stringify(kb, null, 2))
+// fs.writeFileSync(`./data/graph.ld.json`, JSON.stringify(kb, null, 2))
+// fs.writeFileSync(`./data/graph.ld.json`, JSON.stringify(graph, null, 2))
+jsonld.toRDF(graph, {format: 'application/n-quads'}, (err, nquads) => {
+  // nquads is a string of N-Quads
+  console.log('NQUADS??')
+  fs.writeFileSync(`./data/quads.nq`, nquads)
+  console.log(err)
+});
